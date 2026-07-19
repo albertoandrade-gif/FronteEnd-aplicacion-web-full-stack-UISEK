@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Card,
+  CardActions,
   CardContent,
   CircularProgress,
   Container,
@@ -12,6 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 
+import ConfirmDeleteDialog from "../components/ConfirmDeleteDialog";
 import PeliculaFormDialog from "../components/PeliculaFormDialog";
 import api from "../services/api";
 import { cerrarSesion } from "../services/authService";
@@ -22,7 +24,14 @@ function CatalogoPage() {
   const [peliculas, setPeliculas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
+
   const [formularioAbierto, setFormularioAbierto] = useState(false);
+  const [peliculaSeleccionada, setPeliculaSeleccionada] =
+    useState(null);
+
+  const [peliculaEliminar, setPeliculaEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   const cargarPeliculas = async () => {
     try {
@@ -40,9 +49,41 @@ function CatalogoPage() {
   useEffect(() => {
     cargarPeliculas();
   }, []);
-  const handlePeliculaCreada = async () => {
+  const abrirNuevaPelicula = () => {
+    setPeliculaSeleccionada(null);
+    setFormularioAbierto(true);
+  };
+  const abrirEditarPelicula = (pelicula) => {
+    setPeliculaSeleccionada(pelicula);
+    setFormularioAbierto(true);
+  };
+  const handlePeliculaGuardada = async () => {
     setFormularioAbierto(false);
+    setMensaje(
+      peliculaSeleccionada
+        ? "Película actualizada correctamente."
+        : "Película creada correctamente."
+    );
+    setPeliculaSeleccionada(null);
     await cargarPeliculas();
+  };
+  const eliminarPelicula = async () => {
+    if (!peliculaEliminar) {
+      return;
+    }
+    try {
+      setEliminando(true);
+      setError("");
+      await api.delete(`/peliculas/${peliculaEliminar.id}/`);
+      setMensaje("Película eliminada correctamente.");
+      setPeliculaEliminar(null);
+      await cargarPeliculas();
+    } catch (errorSolicitud) {
+      console.error(errorSolicitud);
+      setError("No se pudo eliminar la película.");
+    } finally {
+      setEliminando(false);
+    }
   };
   const handleCerrarSesion = () => {
     cerrarSesion();
@@ -79,10 +120,7 @@ function CatalogoPage() {
             Catálogo de películas
           </Typography>
           <Stack direction="row" spacing={2}>
-            <Button
-              variant="contained"
-              onClick={() => setFormularioAbierto(true)}
-            >
+            <Button variant="contained" onClick={abrirNuevaPelicula}>
               Nueva película
             </Button>
             <Button
@@ -94,7 +132,16 @@ function CatalogoPage() {
             </Button>
           </Stack>
         </Box>
-        {error && <Alert severity="error">{error}</Alert>}
+        {mensaje && (
+          <Alert severity="success" onClose={() => setMensaje("")}>
+            {mensaje}
+          </Alert>
+        )}
+        {error && (
+          <Alert severity="error" onClose={() => setError("")}>
+            {error}
+          </Alert>
+        )}
         {cargando ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
@@ -146,6 +193,20 @@ function CatalogoPage() {
                     </Typography>
                   </Stack>
                 </CardContent>
+                <CardActions>
+                  <Button
+                    onClick={() => abrirEditarPelicula(pelicula)}
+                  >
+                    Editar
+                  </Button>
+
+                  <Button
+                    color="error"
+                    onClick={() => setPeliculaEliminar(pelicula)}
+                  >
+                    Eliminar
+                  </Button>
+                </CardActions>
               </Card>
             ))}
           </Box>
@@ -153,10 +214,22 @@ function CatalogoPage() {
       </Stack>
       <PeliculaFormDialog
         open={formularioAbierto}
-        onClose={() => setFormularioAbierto(false)}
-        onCreated={handlePeliculaCreada}
+        pelicula={peliculaSeleccionada}
+        onClose={() => {
+          setFormularioAbierto(false);
+          setPeliculaSeleccionada(null);
+        }}
+        onSaved={handlePeliculaGuardada}
+      />
+      <ConfirmDeleteDialog
+        open={Boolean(peliculaEliminar)}
+        nombre={peliculaEliminar?.nombre}
+        eliminando={eliminando}
+        onCancel={() => setPeliculaEliminar(null)}
+        onConfirm={eliminarPelicula}
       />
     </Container>
   );
 }
+
 export default CatalogoPage;

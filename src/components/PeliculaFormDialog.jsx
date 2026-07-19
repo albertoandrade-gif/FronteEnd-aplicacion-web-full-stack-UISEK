@@ -32,6 +32,7 @@ const GENEROS = [
   { value: "SUSPENSE", label: "Suspenso" },
   { value: "WESTERN", label: "Western" },
 ];
+
 const FORMULARIO_INICIAL = {
   nombre: "",
   duracion: "",
@@ -40,33 +41,63 @@ const FORMULARIO_INICIAL = {
   director: "",
   vendedores: [],
 };
-function PeliculaFormDialog({ open, onClose, onCreated }) {
+
+function PeliculaFormDialog({
+  open,
+  onClose,
+  onSaved,
+  pelicula,
+}) {
   const [formulario, setFormulario] = useState(FORMULARIO_INICIAL);
   const [directores, setDirectores] = useState([]);
   const [vendedores, setVendedores] = useState([]);
   const [cargandoDatos, setCargandoDatos] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+
+  const esEdicion = Boolean(pelicula);
+
   useEffect(() => {
-    if (open) {
-      cargarDatosRelacionados();
+    if (!open) {
+      return;
     }
-  }, [open]);
+    cargarDatosRelacionados();
+    if (pelicula) {
+      setFormulario({
+        nombre: pelicula.nombre ?? "",
+        duracion: pelicula.duracion ?? "",
+        fecha_lanzamiento: pelicula.fecha_lanzamiento ?? "",
+        genero: pelicula.genero ?? "DRAMA",
+        director:
+          pelicula.director_detail?.id ??
+          pelicula.director ??
+          "",
+        vendedores:
+          pelicula.vendedores?.map?.((valor) =>
+            typeof valor === "object" ? valor.id : valor
+          ) ??
+          pelicula.vendedores_detail?.map((vendedor) => vendedor.id) ??
+          [],
+      });
+    } else {
+      setFormulario(FORMULARIO_INICIAL);
+    }
+  }, [open, pelicula]);
   const cargarDatosRelacionados = async () => {
     try {
       setCargandoDatos(true);
       setError("");
 
-      const [respuestaDirectores, respuestaVendedores] = await Promise.all([
-        api.get("/directores/"),
-        api.get("/vendedores/"),
-      ]);
-
+      const [respuestaDirectores, respuestaVendedores] =
+        await Promise.all([
+          api.get("/directores/"),
+          api.get("/vendedores/"),
+        ]);
       setDirectores(respuestaDirectores.data);
       setVendedores(respuestaVendedores.data);
     } catch (errorSolicitud) {
       console.error(errorSolicitud);
-      setError("No se pudieron cargar los directores y vendedores.");
+      setError("No se pudieron cargar los datos relacionados.");
     } finally {
       setCargandoDatos(false);
     }
@@ -78,13 +109,9 @@ function PeliculaFormDialog({ open, onClose, onCreated }) {
       [name]: value,
     }));
   };
-  const limpiarFormulario = () => {
-    setFormulario(FORMULARIO_INICIAL);
-    setError("");
-  };
   const handleCerrar = () => {
     if (!guardando) {
-      limpiarFormulario();
+      setError("");
       onClose();
     }
   };
@@ -99,38 +126,40 @@ function PeliculaFormDialog({ open, onClose, onCreated }) {
       setError("Completa todos los campos obligatorios.");
       return;
     }
+    const datos = {
+      nombre: formulario.nombre.trim(),
+      duracion: Number(formulario.duracion),
+      fecha_lanzamiento: formulario.fecha_lanzamiento,
+      genero: formulario.genero,
+      director: Number(formulario.director),
+      vendedores: formulario.vendedores.map(Number),
+    };
     try {
       setGuardando(true);
       setError("");
-      const datos = {
-        nombre: formulario.nombre.trim(),
-        duracion: Number(formulario.duracion),
-        fecha_lanzamiento: formulario.fecha_lanzamiento,
-        genero: formulario.genero,
-        director: Number(formulario.director),
-        vendedores: formulario.vendedores.map(Number),
-      };
-      await api.post("/peliculas/", datos);
-      limpiarFormulario();
-      onCreated();
+      if (esEdicion) {
+        await api.patch(`/peliculas/${pelicula.id}/`, datos);
+      } else {
+        await api.post("/peliculas/", datos);
+      }
+      onSaved();
     } catch (errorSolicitud) {
       console.error(errorSolicitud);
-
       const datosError = errorSolicitud.response?.data;
-
-      if (datosError) {
-        setError(`No se pudo crear la película: ${JSON.stringify(datosError)}`);
-      } else {
-        setError("No se pudo conectar con el backend.");
-      }
+      setError(
+        datosError
+          ? `No se pudo guardar: ${JSON.stringify(datosError)}`
+          : "No se pudo conectar con el backend."
+      );
     } finally {
       setGuardando(false);
     }
   };
-
   return (
     <Dialog open={open} onClose={handleCerrar} fullWidth maxWidth="sm">
-      <DialogTitle>Nueva película</DialogTitle>
+      <DialogTitle>
+        {esEdicion ? "Editar película" : "Nueva película"}
+      </DialogTitle>
       <DialogContent>
         {cargandoDatos ? (
           <Stack alignItems="center" sx={{ py: 5 }}>
@@ -196,7 +225,6 @@ function PeliculaFormDialog({ open, onClose, onCreated }) {
                 </MenuItem>
               ))}
             </TextField>
-
             <TextField
               label="Director"
               name="director"
@@ -213,7 +241,9 @@ function PeliculaFormDialog({ open, onClose, onCreated }) {
               ))}
             </TextField>
             <FormControl fullWidth>
-              <InputLabel id="vendedores-label">Vendedores</InputLabel>
+              <InputLabel id="vendedores-label">
+                Vendedores
+              </InputLabel>
               <Select
                 labelId="vendedores-label"
                 name="vendedores"
@@ -243,7 +273,11 @@ function PeliculaFormDialog({ open, onClose, onCreated }) {
           variant="contained"
           disabled={guardando || cargandoDatos}
         >
-          {guardando ? "Guardando..." : "Guardar película"}
+          {guardando
+            ? "Guardando..."
+            : esEdicion
+              ? "Guardar cambios"
+              : "Guardar película"}
         </Button>
       </DialogActions>
     </Dialog>
