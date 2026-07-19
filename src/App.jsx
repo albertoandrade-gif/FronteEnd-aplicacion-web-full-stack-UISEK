@@ -1,14 +1,11 @@
-import { useNavigate } from "react-router-dom";
-import { Route, Routes } from "react-router-dom";
-import {
-  Button,
-  Container,
-  Stack,
-  Typography,
-} from "@mui/material";
-
-import LoginPage from "./pages/LoginPage";
+import { Button, Container, Stack, Typography } from "@mui/material";
+import { Route, Routes, useNavigate } from "react-router-dom";
+import ProtectedLayout from "./components/ProtectedLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 import CatalogoPage from "./pages/CatalogoPage";
+import DirectoresPage from "./pages/DirectoresPage";
+import LoginPage from "./pages/LoginPage";
+import VendedoresPage from "./pages/VendedoresPage";
 
 function InicioPage() {
   const navigate = useNavigate();
@@ -36,14 +33,22 @@ function InicioPage() {
     </Container>
   );
 }
+
 function App() {
   return (
     <Routes>
       <Route path="/" element={<InicioPage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/catalogo" element={<CatalogoPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedLayout />}>
+          <Route path="/catalogo" element={<CatalogoPage />} />
+          <Route path="/directores" element={<DirectoresPage />} />
+          <Route path="/vendedores" element={<VendedoresPage />} />
+        </Route>
+      </Route>
       <Route path="*" element={<InicioPage />} />
     </Routes>
   );
 }
+
 export default App;
