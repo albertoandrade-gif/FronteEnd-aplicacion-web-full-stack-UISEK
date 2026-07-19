@@ -25,11 +25,14 @@ function VendedoresPage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
+
   const [formularioAbierto, setFormularioAbierto] = useState(false);
   const [vendedorSeleccionado, setVendedorSeleccionado] =
     useState(null);
+
   const [vendedorEliminar, setVendedorEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
+
   const cargarVendedores = async () => {
     try {
       setCargando(true);
@@ -72,7 +75,6 @@ function VendedoresPage() {
       setEliminando(true);
       setError("");
       await api.delete(`/vendedores/${vendedorEliminar.id}/`);
-
       setVendedorEliminar(null);
       setMensaje("Vendedor eliminado correctamente.");
       await cargarVendedores();
@@ -82,6 +84,12 @@ function VendedoresPage() {
     } finally {
       setEliminando(false);
     }
+  };
+  const obtenerInicial = (nombre) => {
+    if (!nombre) {
+      return "?";
+    }
+    return nombre.trim().charAt(0).toUpperCase();
   };
   return (
     <Container maxWidth="lg" sx={{ py: 5 }}>
@@ -101,10 +109,19 @@ function VendedoresPage() {
             gap: 2,
           }}
         >
-          <Typography variant="h3" component="h1">
-            Vendedores
-          </Typography>
-          <Button variant="contained" onClick={abrirNuevoVendedor}>
+          <Box>
+            <Typography variant="h3" component="h1">
+              Vendedores
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 1 }}>
+              Gestiona las plataformas y medios de distribución.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={abrirNuevoVendedor}
+          >
             Nuevo vendedor
           </Button>
         </Box>
@@ -119,7 +136,13 @@ function VendedoresPage() {
           </Alert>
         )}
         {cargando ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              py: 8,
+            }}
+          >
             <CircularProgress />
           </Box>
         ) : vendedores.length === 0 ? (
@@ -139,25 +162,65 @@ function VendedoresPage() {
             }}
           >
             {vendedores.map((vendedor) => (
-              <Card key={vendedor.id} sx={{ height: "100%" }}>
-                <CardContent>
-                  <Stack spacing={1}>
-                    <Typography variant="h5">
-                      {vendedor.nombre}
-                    </Typography>
-
-                    <Typography color="text.secondary">
-                      Tipo: {vendedor.tipo_display || vendedor.tipo}
-                    </Typography>
+              <Card
+                key={vendedor.id}
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 3,
+                  transition:
+                    "transform 0.2s ease, box-shadow 0.2s ease",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: 6,
+                  },
+                }}
+              >
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Stack spacing={2} alignItems="center">
+                    <Box
+                      sx={{
+                        width: 86,
+                        height: 86,
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        bgcolor: "primary.main",
+                        color: "primary.contrastText",
+                        fontSize: 38,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {obtenerInicial(vendedor.nombre)}
+                    </Box>
+                    <Box sx={{ textAlign: "center" }}>
+                      <Typography variant="h5">
+                        {vendedor.nombre}
+                      </Typography>
+                      <Typography color="text.secondary" sx={{ mt: 1 }}>
+                        Tipo:{" "}
+                        {vendedor.tipo_display || vendedor.tipo}
+                      </Typography>
+                    </Box>
                   </Stack>
                 </CardContent>
-                <CardActions>
+                <CardActions
+                  sx={{
+                    px: 2,
+                    pb: 2,
+                    justifyContent: "center",
+                  }}
+                >
                   <Button
+                    variant="outlined"
                     onClick={() => abrirEditarVendedor(vendedor)}
                   >
                     Editar
                   </Button>
                   <Button
+                    variant="outlined"
                     color="error"
                     onClick={() => setVendedorEliminar(vendedor)}
                   >
@@ -180,7 +243,11 @@ function VendedoresPage() {
       />
       <Dialog
         open={Boolean(vendedorEliminar)}
-        onClose={() => setVendedorEliminar(null)}
+        onClose={() => {
+          if (!eliminando) {
+            setVendedorEliminar(null);
+          }
+        }}
       >
         <DialogTitle>Eliminar vendedor</DialogTitle>
         <DialogContent>

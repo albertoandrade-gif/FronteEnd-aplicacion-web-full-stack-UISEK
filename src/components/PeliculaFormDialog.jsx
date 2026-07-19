@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -13,9 +14,11 @@ import {
   Select,
   Stack,
   TextField,
+  Typography,
 } from "@mui/material";
 
 import api from "../services/api";
+import { obtenerUrlMedia } from "../utils/media";
 
 const GENEROS = [
   { value: "ACCION", label: "Acción" },
@@ -51,6 +54,10 @@ function PeliculaFormDialog({
   const [formulario, setFormulario] = useState(FORMULARIO_INICIAL);
   const [directores, setDirectores] = useState([]);
   const [vendedores, setVendedores] = useState([]);
+
+  const [poster, setPoster] = useState(null);
+  const [vistaPrevia, setVistaPrevia] = useState("");
+
   const [cargandoDatos, setCargandoDatos] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
@@ -62,6 +69,8 @@ function PeliculaFormDialog({
       return;
     }
     cargarDatosRelacionados();
+    setPoster(null);
+    setError("");
     if (pelicula) {
       setFormulario({
         nombre: pelicula.nombre ?? "",
@@ -79,42 +88,81 @@ function PeliculaFormDialog({
           pelicula.vendedores_detail?.map((vendedor) => vendedor.id) ??
           [],
       });
+
+      setVistaPrevia(obtenerUrlMedia(pelicula.poster));
     } else {
       setFormulario(FORMULARIO_INICIAL);
+      setVistaPrevia("");
     }
   }, [open, pelicula]);
+
   const cargarDatosRelacionados = async () => {
     try {
       setCargandoDatos(true);
-      setError("");
 
       const [respuestaDirectores, respuestaVendedores] =
         await Promise.all([
           api.get("/directores/"),
           api.get("/vendedores/"),
         ]);
+
       setDirectores(respuestaDirectores.data);
       setVendedores(respuestaVendedores.data);
     } catch (errorSolicitud) {
       console.error(errorSolicitud);
-      setError("No se pudieron cargar los datos relacionados.");
+      setError("No se pudieron cargar directores y vendedores.");
     } finally {
       setCargandoDatos(false);
     }
   };
+
   const handleChange = (event) => {
     const { name, value } = event.target;
+
     setFormulario((anterior) => ({
       ...anterior,
       [name]: value,
     }));
   };
-  const handleCerrar = () => {
-    if (!guardando) {
-      setError("");
-      onClose();
+
+  const handlePosterChange = (event) => {
+    const archivo = event.target.files?.[0];
+
+    if (!archivo) {
+      return;
     }
+
+    if (!archivo.type.startsWith("image/")) {
+      setError("Selecciona un archivo de imagen.");
+      return;
+    }
+
+    if (archivo.size > 5 * 1024 * 1024) {
+      setError("La imagen no puede superar los 5 MB.");
+      return;
+    }
+
+    if (vistaPrevia.startsWith("blob:")) {
+      URL.revokeObjectURL(vistaPrevia);
+    }
+
+    setPoster(archivo);
+    setVistaPrevia(URL.createObjectURL(archivo));
+    setError("");
   };
+
+  const handleCerrar = () => {
+    if (guardando) {
+      return;
+    }
+
+    if (vistaPrevia.startsWith("blob:")) {
+      URL.revokeObjectURL(vistaPrevia);
+    }
+
+    onClose();
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (
@@ -126,29 +174,39 @@ function PeliculaFormDialog({
       setError("Completa todos los campos obligatorios.");
       return;
     }
-    const datos = {
-      nombre: formulario.nombre.trim(),
-      duracion: Number(formulario.duracion),
-      fecha_lanzamiento: formulario.fecha_lanzamiento,
-      genero: formulario.genero,
-      director: Number(formulario.director),
-      vendedores: formulario.vendedores.map(Number),
-    };
+    const datos = new FormData();
+    datos.append("nombre", formulario.nombre.trim());
+    datos.append("duracion", String(formulario.duracion));
+    datos.append(
+      "fecha_lanzamiento",
+      formulario.fecha_lanzamiento
+    );
+    datos.append("genero", formulario.genero);
+    datos.append("director", String(formulario.director));
+    formulario.vendedores.forEach((vendedorId) => {
+      datos.append("vendedores", String(vendedorId));
+    });
+    if (poster) {
+      datos.append("poster", poster);
+    }
     try {
       setGuardando(true);
       setError("");
       if (esEdicion) {
-        await api.patch(`/peliculas/${pelicula.id}/`, datos);
+        await api.patch(
+          `/peliculas/${pelicula.id}/`,
+          datos
+        );
       } else {
         await api.post("/peliculas/", datos);
       }
       onSaved();
     } catch (errorSolicitud) {
       console.error(errorSolicitud);
-      const datosError = errorSolicitud.response?.data;
+      const detalle = errorSolicitud.response?.data;
       setError(
-        datosError
-          ? `No se pudo guardar: ${JSON.stringify(datosError)}`
+        detalle
+          ? `No se pudo guardar: ${JSON.stringify(detalle)}`
           : "No se pudo conectar con el backend."
       );
     } finally {
@@ -156,7 +214,12 @@ function PeliculaFormDialog({
     }
   };
   return (
-    <Dialog open={open} onClose={handleCerrar} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      onClose={handleCerrar}
+      fullWidth
+      maxWidth="sm"
+    >
       <DialogTitle>
         {esEdicion ? "Editar película" : "Nueva película"}
       </DialogTitle>
@@ -174,6 +237,34 @@ function PeliculaFormDialog({
             onSubmit={handleSubmit}
           >
             {error && <Alert severity="error">{error}</Alert>}
+            {vistaPrevia && (
+              <Box
+                component="img"
+                src={vistaPrevia}
+                alt="Vista previa del póster"
+                sx={{
+                  width: "100%",
+                  maxHeight: 360,
+                  objectFit: "contain",
+                  borderRadius: 2,
+                  bgcolor: "grey.100",
+                }}
+              />
+            )}
+            <Button variant="outlined" component="label">
+              Seleccionar póster
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handlePosterChange}
+              />
+            </Button>
+            {poster && (
+              <Typography variant="body2" color="text.secondary">
+                Archivo seleccionado: {poster.name}
+              </Typography>
+            )}
             <TextField
               label="Nombre"
               name="nombre"
@@ -244,6 +335,7 @@ function PeliculaFormDialog({
               <InputLabel id="vendedores-label">
                 Vendedores
               </InputLabel>
+
               <Select
                 labelId="vendedores-label"
                 name="vendedores"

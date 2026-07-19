@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -8,9 +9,11 @@ import {
   DialogTitle,
   Stack,
   TextField,
+  Typography,
 } from "@mui/material";
 
 import api from "../services/api";
+import { obtenerUrlMedia } from "../utils/media";
 
 const FORMULARIO_INICIAL = {
   nombre: "",
@@ -26,6 +29,8 @@ function DirectorFormDialog({
   onSaved,
 }) {
   const [formulario, setFormulario] = useState(FORMULARIO_INICIAL);
+  const [foto, setFoto] = useState(null);
+  const [vistaPrevia, setVistaPrevia] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,6 +40,10 @@ function DirectorFormDialog({
     if (!open) {
       return;
     }
+
+    setError("");
+    setFoto(null);
+
     if (director) {
       setFormulario({
         nombre: director.nombre ?? "",
@@ -42,11 +51,14 @@ function DirectorFormDialog({
         premios_ganados: director.premios_ganados ?? 0,
         biografia: director.biografia ?? "",
       });
+
+      setVistaPrevia(obtenerUrlMedia(director.foto));
     } else {
       setFormulario(FORMULARIO_INICIAL);
+      setVistaPrevia("");
     }
-    setError("");
   }, [open, director]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -55,44 +67,119 @@ function DirectorFormDialog({
       [name]: value,
     }));
   };
+
+  const handleFotoChange = (event) => {
+    const archivo = event.target.files?.[0];
+
+    if (!archivo) {
+      return;
+    }
+
+    if (!archivo.type.startsWith("image/")) {
+      setError("Selecciona un archivo de imagen válido.");
+      return;
+    }
+
+    if (archivo.size > 5 * 1024 * 1024) {
+      setError("La fotografía no puede superar los 5 MB.");
+      return;
+    }
+
+    if (vistaPrevia.startsWith("blob:")) {
+      URL.revokeObjectURL(vistaPrevia);
+    }
+
+    setFoto(archivo);
+    setVistaPrevia(URL.createObjectURL(archivo));
+    setError("");
+  };
+
+  const handleCerrar = () => {
+    if (guardando) {
+      return;
+    }
+
+    if (vistaPrevia.startsWith("blob:")) {
+      URL.revokeObjectURL(vistaPrevia);
+    }
+
+    onClose();
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!formulario.nombre.trim() || !formulario.fecha_nacimiento) {
+
+    if (
+      !formulario.nombre.trim() ||
+      !formulario.fecha_nacimiento
+    ) {
       setError("Completa los campos obligatorios.");
       return;
     }
-    const datos = {
-      nombre: formulario.nombre.trim(),
-      fecha_nacimiento: formulario.fecha_nacimiento,
-      premios_ganados: Number(formulario.premios_ganados),
-      biografia: formulario.biografia.trim(),
-    };
+
+    const datos = new FormData();
+
+    datos.append("nombre", formulario.nombre.trim());
+
+    datos.append(
+      "fecha_nacimiento",
+      formulario.fecha_nacimiento
+    );
+
+    datos.append(
+      "premios_ganados",
+      String(formulario.premios_ganados || 0)
+    );
+
+    datos.append(
+      "biografia",
+      formulario.biografia.trim()
+    );
+
+    if (foto) {
+      datos.append("foto", foto);
+    }
+
     try {
       setGuardando(true);
       setError("");
+
       if (esEdicion) {
-        await api.patch(`/directores/${director.id}/`, datos);
+        await api.patch(
+          `/directores/${director.id}/`,
+          datos
+        );
       } else {
         await api.post("/directores/", datos);
       }
+
       onSaved();
     } catch (errorSolicitud) {
       console.error(errorSolicitud);
-      const datosError = errorSolicitud.response?.data;
+
+      const detalle = errorSolicitud.response?.data;
+
       setError(
-        datosError
-          ? `No se pudo guardar: ${JSON.stringify(datosError)}`
+        detalle
+          ? `No se pudo guardar: ${JSON.stringify(detalle)}`
           : "No se pudo conectar con el backend."
       );
     } finally {
       setGuardando(false);
     }
   };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      onClose={handleCerrar}
+      fullWidth
+      maxWidth="sm"
+    >
       <DialogTitle>
         {esEdicion ? "Editar director" : "Nuevo director"}
       </DialogTitle>
+
       <DialogContent>
         <Stack
           component="form"
@@ -101,7 +188,70 @@ function DirectorFormDialog({
           sx={{ pt: 1 }}
           onSubmit={handleSubmit}
         >
-          {error && <Alert severity="error">{error}</Alert>}
+          {error && (
+            <Alert severity="error">
+              {error}
+            </Alert>
+          )}
+
+          {vistaPrevia ? (
+            <Box
+              component="img"
+              src={vistaPrevia}
+              alt="Vista previa del director"
+              sx={{
+                width: 190,
+                height: 190,
+                objectFit: "cover",
+                borderRadius: "50%",
+                alignSelf: "center",
+                border: "1px solid",
+                borderColor: "divider",
+                bgcolor: "grey.100",
+              }}
+            />
+          ) : (
+            <Box
+              sx={{
+                width: 190,
+                height: 190,
+                borderRadius: "50%",
+                alignSelf: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: "grey.200",
+                color: "text.secondary",
+              }}
+            >
+              Sin fotografía
+            </Box>
+          )}
+
+          <Button
+            variant="outlined"
+            component="label"
+          >
+            Seleccionar fotografía
+
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              hidden
+              onChange={handleFotoChange}
+            />
+          </Button>
+
+          {foto && (
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              textAlign="center"
+            >
+              Archivo seleccionado: {foto.name}
+            </Typography>
+          )}
+
           <TextField
             label="Nombre"
             name="nombre"
@@ -110,33 +260,36 @@ function DirectorFormDialog({
             required
             fullWidth
           />
+
           <TextField
             label="Fecha de nacimiento"
             name="fecha_nacimiento"
             type="date"
             value={formulario.fecha_nacimiento}
             onChange={handleChange}
+            required
+            fullWidth
             slotProps={{
               inputLabel: {
                 shrink: true,
               },
             }}
-            required
-            fullWidth
           />
+
           <TextField
             label="Premios ganados"
             name="premios_ganados"
             type="number"
             value={formulario.premios_ganados}
             onChange={handleChange}
+            fullWidth
             slotProps={{
               htmlInput: {
                 min: 0,
               },
             }}
-            fullWidth
           />
+
           <TextField
             label="Biografía"
             name="biografia"
@@ -148,10 +301,15 @@ function DirectorFormDialog({
           />
         </Stack>
       </DialogContent>
+
       <DialogActions>
-        <Button onClick={onClose} disabled={guardando}>
+        <Button
+          onClick={handleCerrar}
+          disabled={guardando}
+        >
           Cancelar
         </Button>
+
         <Button
           type="submit"
           form="formulario-director"
@@ -168,4 +326,5 @@ function DirectorFormDialog({
     </Dialog>
   );
 }
+
 export default DirectorFormDialog;

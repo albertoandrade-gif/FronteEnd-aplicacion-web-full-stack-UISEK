@@ -6,6 +6,7 @@ import {
   Card,
   CardActions,
   CardContent,
+  CardMedia,
   CircularProgress,
   Container,
   Dialog,
@@ -19,6 +20,7 @@ import {
 
 import DirectorFormDialog from "../components/DirectorFormDialog";
 import api from "../services/api";
+import { obtenerUrlMedia } from "../utils/media";
 
 function DirectoresPage() {
   const [directores, setDirectores] = useState([]);
@@ -27,7 +29,8 @@ function DirectoresPage() {
   const [mensaje, setMensaje] = useState("");
 
   const [formularioAbierto, setFormularioAbierto] = useState(false);
-  const [directorSeleccionado, setDirectorSeleccionado] = useState(null);
+  const [directorSeleccionado, setDirectorSeleccionado] =
+    useState(null);
 
   const [directorEliminar, setDirectorEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
@@ -46,34 +49,27 @@ function DirectoresPage() {
       setCargando(false);
     }
   };
-
   useEffect(() => {
     cargarDirectores();
   }, []);
-
   const abrirNuevoDirector = () => {
     setDirectorSeleccionado(null);
     setFormularioAbierto(true);
   };
-
   const abrirEditarDirector = (director) => {
     setDirectorSeleccionado(director);
     setFormularioAbierto(true);
   };
-
   const handleDirectorGuardado = async () => {
     setFormularioAbierto(false);
-
     setMensaje(
       directorSeleccionado
         ? "Director actualizado correctamente."
         : "Director creado correctamente."
     );
-
     setDirectorSeleccionado(null);
     await cargarDirectores();
   };
-
   const eliminarDirector = async () => {
     if (!directorEliminar) {
       return;
@@ -82,12 +78,9 @@ function DirectoresPage() {
     try {
       setEliminando(true);
       setError("");
-
       await api.delete(`/directores/${directorEliminar.id}/`);
-
       setDirectorEliminar(null);
       setMensaje("Director eliminado correctamente.");
-
       await cargarDirectores();
     } catch (errorSolicitud) {
       console.error(errorSolicitud);
@@ -98,7 +91,6 @@ function DirectoresPage() {
       setEliminando(false);
     }
   };
-
   return (
     <Container maxWidth="lg" sx={{ py: 5 }}>
       <Stack spacing={4}>
@@ -117,29 +109,40 @@ function DirectoresPage() {
             gap: 2,
           }}
         >
-          <Typography variant="h3" component="h1">
-            Directores
-          </Typography>
-
-          <Button variant="contained" onClick={abrirNuevoDirector}>
+          <Box>
+            <Typography variant="h3" component="h1">
+              Directores
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 1 }}>
+              Registra información y fotografías de los directores.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={abrirNuevoDirector}
+          >
             Nuevo director
           </Button>
         </Box>
-
         {mensaje && (
           <Alert severity="success" onClose={() => setMensaje("")}>
             {mensaje}
           </Alert>
         )}
-
         {error && (
           <Alert severity="error" onClose={() => setError("")}>
             {error}
           </Alert>
         )}
-
         {cargando ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              py: 8,
+            }}
+          >
             <CircularProgress />
           </Box>
         ) : directores.length === 0 ? (
@@ -159,33 +162,83 @@ function DirectoresPage() {
             }}
           >
             {directores.map((director) => (
-              <Card key={director.id} sx={{ height: "100%" }}>
-                <CardContent>
+              <Card
+                key={director.id}
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 3,
+                  overflow: "hidden",
+                  transition:
+                    "transform 0.2s ease, box-shadow 0.2s ease",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: 6,
+                  },
+                }}
+              >
+                {director.foto ? (
+                  <CardMedia
+                    component="img"
+                    image={obtenerUrlMedia(director.foto)}
+                    alt={`Foto de ${director.nombre}`}
+                    sx={{
+                      width: "100%",
+                      height: 300,
+                      objectFit: "contain",
+                      objectPosition: "center",
+                      bgcolor: "#111",
+                    }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      height: 300,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      bgcolor: "grey.200",
+                      color: "text.secondary",
+                    }}
+                  >
+                    Sin fotografía
+                  </Box>
+                )}
+                <CardContent sx={{ flexGrow: 1 }}>
                   <Stack spacing={1}>
                     <Typography variant="h5">
                       {director.nombre}
                     </Typography>
-
                     <Typography>
                       Nacimiento: {director.fecha_nacimiento}
                     </Typography>
-
                     <Typography>
                       Premios ganados: {director.premios_ganados}
                     </Typography>
-
-                    <Typography color="text.secondary">
-                      {director.biografia || "Sin biografía registrada."}
+                    <Typography
+                      color="text.secondary"
+                      sx={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 4,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {director.biografia ||
+                        "Sin biografía registrada."}
                     </Typography>
                   </Stack>
                 </CardContent>
-
-                <CardActions>
-                  <Button onClick={() => abrirEditarDirector(director)}>
+                <CardActions sx={{ px: 2, pb: 2 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => abrirEditarDirector(director)}
+                  >
                     Editar
                   </Button>
-
                   <Button
+                    variant="outlined"
                     color="error"
                     onClick={() => setDirectorEliminar(director)}
                   >
@@ -197,7 +250,6 @@ function DirectoresPage() {
           </Box>
         )}
       </Stack>
-
       <DirectorFormDialog
         open={formularioAbierto}
         director={directorSeleccionado}
@@ -207,20 +259,21 @@ function DirectoresPage() {
         }}
         onSaved={handleDirectorGuardado}
       />
-
       <Dialog
         open={Boolean(directorEliminar)}
-        onClose={() => setDirectorEliminar(null)}
+        onClose={() => {
+          if (!eliminando) {
+            setDirectorEliminar(null);
+          }
+        }}
       >
         <DialogTitle>Eliminar director</DialogTitle>
-
         <DialogContent>
           <DialogContentText>
             ¿Seguro que deseas eliminar a{" "}
             <strong>{directorEliminar?.nombre}</strong>?
           </DialogContentText>
         </DialogContent>
-
         <DialogActions>
           <Button
             onClick={() => setDirectorEliminar(null)}
@@ -228,7 +281,6 @@ function DirectoresPage() {
           >
             Cancelar
           </Button>
-
           <Button
             color="error"
             variant="contained"

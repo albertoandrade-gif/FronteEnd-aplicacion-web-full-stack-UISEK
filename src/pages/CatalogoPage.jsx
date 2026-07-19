@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -7,6 +6,7 @@ import {
   Card,
   CardActions,
   CardContent,
+  CardMedia,
   CircularProgress,
   Container,
   Stack,
@@ -16,11 +16,9 @@ import {
 import ConfirmDeleteDialog from "../components/ConfirmDeleteDialog";
 import PeliculaFormDialog from "../components/PeliculaFormDialog";
 import api from "../services/api";
-import { cerrarSesion } from "../services/authService";
+import { obtenerUrlMedia } from "../utils/media";
 
 function CatalogoPage() {
-  const navigate = useNavigate();
-
   const [peliculas, setPeliculas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -85,10 +83,6 @@ function CatalogoPage() {
       setEliminando(false);
     }
   };
-  const handleCerrarSesion = () => {
-    cerrarSesion();
-    navigate("/login");
-  };
   const mostrarGenero = (genero) => {
     if (!genero) {
       return "Sin género";
@@ -116,21 +110,21 @@ function CatalogoPage() {
             gap: 2,
           }}
         >
-          <Typography variant="h3" component="h1">
-            Catálogo de películas
-          </Typography>
-          <Stack direction="row" spacing={2}>
-            <Button variant="contained" onClick={abrirNuevaPelicula}>
-              Nueva película
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={handleCerrarSesion}
-            >
-              Cerrar sesión
-            </Button>
-          </Stack>
+          <Box>
+            <Typography variant="h3" component="h1">
+              Catálogo de películas
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 1 }}>
+              Administra las películas, sus directores y vendedores.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={abrirNuevaPelicula}
+          >
+            Nueva película
+          </Button>
         </Box>
         {mensaje && (
           <Alert severity="success" onClose={() => setMensaje("")}>
@@ -143,7 +137,13 @@ function CatalogoPage() {
           </Alert>
         )}
         {cargando ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              py: 8,
+            }}
+          >
             <CircularProgress />
           </Box>
         ) : peliculas.length === 0 ? (
@@ -163,8 +163,51 @@ function CatalogoPage() {
             }}
           >
             {peliculas.map((pelicula) => (
-              <Card key={pelicula.id} sx={{ height: "100%" }}>
-                <CardContent>
+              <Card
+                key={pelicula.id}
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 3,
+                  overflow: "hidden",
+                  transition:
+                    "transform 0.2s ease, box-shadow 0.2s ease",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: 6,
+                  },
+                }}
+              >
+                {pelicula.poster ? (
+                  <CardMedia
+                    component="img"
+                    image={obtenerUrlMedia(pelicula.poster)}
+                    alt={`Póster de ${pelicula.nombre}`}
+                    sx={{
+                      width: "100%",
+                      aspectRatio: "2 / 3",
+                      objectFit: "contain",
+                      objectPosition: "center",
+                      bgcolor: "#111",
+                    }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      aspectRatio: "2 / 3",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      bgcolor: "grey.200",
+                      color: "text.secondary",
+                    }}
+                  >
+                    Sin póster
+                  </Box>
+                )}
+                <CardContent sx={{ flexGrow: 1 }}>
                   <Stack spacing={1}>
                     <Typography variant="h5">
                       {pelicula.nombre}
@@ -193,14 +236,15 @@ function CatalogoPage() {
                     </Typography>
                   </Stack>
                 </CardContent>
-                <CardActions>
+                <CardActions sx={{ px: 2, pb: 2 }}>
                   <Button
+                    variant="outlined"
                     onClick={() => abrirEditarPelicula(pelicula)}
                   >
                     Editar
                   </Button>
-
                   <Button
+                    variant="outlined"
                     color="error"
                     onClick={() => setPeliculaEliminar(pelicula)}
                   >
@@ -231,5 +275,4 @@ function CatalogoPage() {
     </Container>
   );
 }
-
 export default CatalogoPage;
