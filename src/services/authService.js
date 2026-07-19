@@ -1,17 +1,25 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = (
+  import.meta.env.VITE_API_URL ||
+  "http://127.0.0.1:8000"
+).replace(/\/$/, "");
+
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
-const CLIENT_SECRET = import.meta.env.VITE_CLIENT_SECRET;
 
 export async function iniciarSesion(username, password) {
+  if (!CLIENT_ID) {
+    throw new Error(
+      "Falta configurar VITE_CLIENT_ID en el archivo .env.local."
+    );
+  }
+
   const datos = new URLSearchParams();
 
   datos.append("grant_type", "password");
   datos.append("username", username);
   datos.append("password", password);
   datos.append("client_id", CLIENT_ID);
-  datos.append("client_secret", CLIENT_SECRET);
   datos.append("scope", "read write");
 
   const respuesta = await axios.post(
@@ -24,8 +32,21 @@ export async function iniciarSesion(username, password) {
     }
   );
 
-  localStorage.setItem("access_token", respuesta.data.access_token);
-  localStorage.setItem("refresh_token", respuesta.data.refresh_token);
+  const { access_token, refresh_token } = respuesta.data;
+
+  if (!access_token) {
+    throw new Error(
+      "El backend no devolvió un token de acceso válido."
+    );
+  }
+
+  localStorage.setItem("access_token", access_token);
+
+  if (refresh_token) {
+    localStorage.setItem("refresh_token", refresh_token);
+  } else {
+    localStorage.removeItem("refresh_token");
+  }
 
   return respuesta.data;
 }
