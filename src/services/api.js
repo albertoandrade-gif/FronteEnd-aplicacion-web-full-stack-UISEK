@@ -1,8 +1,12 @@
 import axios from "axios";
 
+// Strip trailing slash if it exists to prevent double-slashes
+const cleanBaseUrl = import.meta.env.VITE_API_URL.replace(/\/$/, "");
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api/v1/catalog`,
+  baseURL: `${cleanBaseUrl}/api/v1/catalog`,
 });
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
@@ -15,6 +19,7 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -26,4 +31,5 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 export default api;

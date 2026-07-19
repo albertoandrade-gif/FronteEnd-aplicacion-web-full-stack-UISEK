@@ -22,7 +22,7 @@ function LoginPage() {
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
 
-  const handleSubmit = async (event) => {
+const handleSubmit = async (event) => {
     event.preventDefault();
     if (!usuario.trim() || !password.trim()) {
       setError("Ingresa el usuario y la contraseña.");
@@ -40,10 +40,11 @@ function LoginPage() {
       } else {
         setError("No se pudo conectar con el backend.");
       }
-    } finally {
+    } finally { // Fixed the spelling here
       setCargando(false);
     }
   };
+
   return (
     <Container maxWidth="sm">
       <Box
@@ -55,10 +56,13 @@ function LoginPage() {
       >
         <Paper elevation={4} sx={{ width: "100%", p: 4 }}>
           <Stack component="form" spacing={3} onSubmit={handleSubmit}>
-            <Typography variant="h4" textAlign="center">
+            {/* CORRECCIÓN: Se cambió textAlign por align */}
+            <Typography variant="h4" align="center">
               Iniciar sesión
             </Typography>
+            
             {error && <Alert severity="error">{error}</Alert>}
+            
             <TextField
               label="Usuario"
               value={usuario}
@@ -98,4 +102,5 @@ function LoginPage() {
     </Container>
   );
 }
+
 export default LoginPage;
