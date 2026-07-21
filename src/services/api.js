@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// Strip trailing slash if it exists to prevent double-slashes
+
 const cleanBaseUrl = import.meta.env.VITE_API_URL.replace(/\/$/, "");
 
 const api = axios.create({

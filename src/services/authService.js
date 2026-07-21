@@ -15,12 +15,12 @@ export async function iniciarSesion(username, password) {
   }
 
   const datos = new URLSearchParams();
-
   datos.append("grant_type", "password");
   datos.append("username", username);
   datos.append("password", password);
   datos.append("client_id", CLIENT_ID);
   datos.append("scope", "read write");
+
 
   const respuesta = await axios.post(
     `${API_URL}/api/v1/o/token/`,
@@ -48,14 +48,34 @@ export async function iniciarSesion(username, password) {
     localStorage.removeItem("refresh_token");
   }
 
+  // ---- NUEVA LÓGICA: Obtener perfil del usuario para conocer sus permisos ----
+  try {
+    const perfilRespuesta = await axios.get(`${API_URL}/api/v1/catalog/usuarios/me/`, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
+    
+    localStorage.setItem("is_staff", String(perfilRespuesta.data.is_staff));
+  } catch (errorPerfil) {
+    cerrarSesion();
+    throw new Error("No se pudieron verificar los permisos del usuario.");
+  }
+
   return respuesta.data;
 }
 
 export function cerrarSesion() {
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+  localStorage.removeItem("is_staff"); // Limpieza obligatoria del rol
 }
 
 export function estaAutenticado() {
   return Boolean(localStorage.getItem("access_token"));
+}
+
+// Función de utilidad para verificar el rol en los componentes
+export function esAdministrador() {
+  return localStorage.getItem("is_staff") === "true";
 }
