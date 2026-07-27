@@ -6,7 +6,7 @@ function ProtectedLayout() {
     <Box
       sx={{
         minHeight: "100vh",
-        bgcolor: "grey.100",
+        bgcolor: "background.default",
       }}
     >
       <AppNavbar />

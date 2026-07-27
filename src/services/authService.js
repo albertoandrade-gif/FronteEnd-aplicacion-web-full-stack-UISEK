@@ -7,6 +7,39 @@ const API_URL = (
 const CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.VITE_CLIENT_SECRET;
 
+const REGISTER_ENDPOINT =
+  import.meta.env.VITE_REGISTER_ENDPOINT ||
+  "/api/v1/catalog/usuarios/registro/";
+
+function obtenerUrlRegistro() {
+  if (
+    REGISTER_ENDPOINT.startsWith("http://") ||
+    REGISTER_ENDPOINT.startsWith("https://")
+  ) {
+    return REGISTER_ENDPOINT;
+  }
+
+  const ruta = REGISTER_ENDPOINT.startsWith("/")
+    ? REGISTER_ENDPOINT
+    : `/${REGISTER_ENDPOINT}`;
+
+  return `${API_URL}${ruta}`;
+}
+
+export async function registrarUsuario(datosUsuario) {
+  const respuesta = await axios.post(
+    obtenerUrlRegistro(),
+    datosUsuario,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return respuesta.data;
+}
+
 export async function iniciarSesion(username, password) {
   if (!CLIENT_ID) {
     throw new Error("Falta configurar VITE_CLIENT_ID en .env.local.");
@@ -22,11 +55,15 @@ export async function iniciarSesion(username, password) {
     datos.append("client_secret", CLIENT_SECRET);
   }
 
-  const respuesta = await axios.post(`${API_URL}/api/v1/o/token/`, datos, {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  });
+  const respuesta = await axios.post(
+    `${API_URL}/api/v1/o/token/`,
+    datos,
+    {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    }
+  );
 
   const { access_token, refresh_token } = respuesta.data;
 
@@ -52,8 +89,13 @@ export async function iniciarSesion(username, password) {
       }
     );
 
-    localStorage.setItem("is_staff", String(perfilRespuesta.data.is_staff));
-  } catch (errorPerfil) {
+    const esStaff = Boolean(
+      perfilRespuesta.data.is_staff ||
+        perfilRespuesta.data.is_superuser
+    );
+
+    localStorage.setItem("is_staff", String(esStaff));
+  } catch {
     cerrarSesion();
     throw new Error("No se pudo obtener el perfil del usuario.");
   }

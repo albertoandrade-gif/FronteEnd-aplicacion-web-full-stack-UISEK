@@ -43,6 +43,7 @@ const FORMULARIO_INICIAL = {
   genero: "DRAMA",
   director: "",
   vendedores: [],
+  trailer_url: "",
 };
 
 function PeliculaFormDialog({
@@ -87,6 +88,11 @@ function PeliculaFormDialog({
           ) ??
           pelicula.vendedores_detail?.map((vendedor) => vendedor.id) ??
           [],
+        trailer_url:
+          pelicula.trailer_url ??
+          pelicula.url_trailer ??
+          pelicula.trailer ??
+          "",
       });
 
       setVistaPrevia(obtenerUrlMedia(pelicula.poster));
@@ -183,6 +189,8 @@ function PeliculaFormDialog({
     );
     datos.append("genero", formulario.genero);
     datos.append("director", String(formulario.director));
+    datos.append("trailer_url", formulario.trailer_url.trim());
+
     formulario.vendedores.forEach((vendedorId) => {
       datos.append("vendedores", String(vendedorId));
     });
@@ -331,6 +339,16 @@ function PeliculaFormDialog({
                 </MenuItem>
               ))}
             </TextField>
+            <TextField
+              label="URL del tráiler"
+              name="trailer_url"
+              type="url"
+              value={formulario.trailer_url}
+              onChange={handleChange}
+              helperText="Admite enlaces de YouTube, Vimeo o video directo."
+              placeholder="https://www.youtube.com/watch?v=..."
+              fullWidth
+            />
             <FormControl fullWidth>
               <InputLabel id="vendedores-label">
                 Vendedores

@@ -1,0 +1,18 @@
+.trailer-player {
+  padding-top: 4px;
+}
+
+.trailer-player__frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: #000000;
+  box-shadow: 0 8px 22px rgba(17, 24, 39, 0.2);
+}
+
+.trailer-player__notice.MuiAlert-root {
+  border-radius: 10px;
+}

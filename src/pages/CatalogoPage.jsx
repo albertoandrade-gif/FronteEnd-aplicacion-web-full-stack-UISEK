@@ -112,10 +112,10 @@ function CatalogoPage() {
         >
           <Box>
             <Typography variant="h3" component="h1">
-              Catálogo de películas
+              Administración de películas
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 1 }}>
-              Administra las películas, sus directores y vendedores.
+              Vista exclusiva para Admin/Staff con las operaciones CRUD.
             </Typography>
           </Box>
           <Button

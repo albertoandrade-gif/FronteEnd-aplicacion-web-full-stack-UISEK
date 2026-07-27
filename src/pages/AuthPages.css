@@ -1,0 +1,48 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex !important;
+  align-items: center;
+}
+
+.auth-page__shell {
+  width: 100%;
+  padding-top: 36px;
+  padding-bottom: 36px;
+}
+
+.auth-card.MuiPaper-root {
+  overflow: hidden;
+  border: 1px solid rgba(0, 59, 113, 0.12);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(244, 248, 252, 0.82), #ffffff 34%);
+  box-shadow: 0 18px 48px rgba(23, 32, 51, 0.15);
+}
+
+.auth-card .MuiTypography-h4 {
+  color: #003b71;
+}
+
+.auth-form .MuiOutlinedInput-root {
+  background-color: #ffffff;
+}
+
+.auth-form .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 3px rgba(0, 59, 113, 0.09);
+}
+
+.auth-form .MuiButton-contained:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 59, 113, 0.2);
+}
+
+@media (max-width: 600px) {
+  .auth-page__shell {
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  .auth-card.MuiPaper-root {
+    border-radius: 16px;
+  }
+}

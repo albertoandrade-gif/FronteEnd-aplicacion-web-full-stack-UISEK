@@ -1,0 +1,59 @@
+.app-navbar.MuiAppBar-root {
+  background: linear-gradient(135deg, #00284d 0%, #003b71 58%, #075a9c 100%);
+  box-shadow: 0 7px 24px rgba(0, 40, 77, 0.24);
+}
+
+.app-navbar__toolbar {
+  min-height: 70px !important;
+  gap: 12px;
+}
+
+.app-navbar__brand {
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.app-navbar__links {
+  align-items: center;
+}
+
+.app-navbar__links .MuiButton-root,
+.app-navbar__logout.MuiButton-root {
+  border-radius: 9px;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.app-navbar__links .MuiButton-root:hover,
+.app-navbar__logout.MuiButton-root:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+.app-navbar__role.MuiChip-root {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.13);
+}
+
+@media (max-width: 700px) {
+  .app-navbar__toolbar {
+    flex-wrap: wrap;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .app-navbar__brand {
+    flex-grow: 1;
+  }
+
+  .app-navbar__links {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-top: 4px;
+  }
+
+  .app-navbar__links .MuiButton-root {
+    flex: 1 0 auto;
+  }
+}

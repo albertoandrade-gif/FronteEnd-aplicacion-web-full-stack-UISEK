@@ -1,0 +1,23 @@
+.register-form .MuiTextField-root,
+.register-form .MuiButton-root {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.register-form .MuiOutlinedInput-root {
+  background-color: #ffffff;
+}
+
+.register-form .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 3px rgba(0, 59, 113, 0.09);
+}
+
+.register-form .MuiButton-contained:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(0, 59, 113, 0.2);
+}
+
+.register-form .MuiFormHelperText-root {
+  margin-left: 2px;
+}

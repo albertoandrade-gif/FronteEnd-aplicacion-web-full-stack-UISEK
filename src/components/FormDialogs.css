@@ -1,0 +1,30 @@
+.entity-form-dialog .MuiDialog-paper,
+.confirm-delete-dialog .MuiDialog-paper {
+  overflow: hidden;
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(16, 24, 40, 0.2);
+}
+
+.entity-form-dialog .MuiDialogTitle-root,
+.confirm-delete-dialog .MuiDialogTitle-root {
+  color: #003b71;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f7faff, #eef5fb);
+  border-bottom: 1px solid #e4e7ec;
+}
+
+.entity-form-dialog .MuiDialogContent-root,
+.confirm-delete-dialog .MuiDialogContent-root {
+  padding-top: 24px !important;
+}
+
+.entity-form-dialog .MuiDialogActions-root,
+.confirm-delete-dialog .MuiDialogActions-root {
+  padding: 16px 24px 22px;
+  border-top: 1px solid #eef0f3;
+}
+
+.entity-form-dialog .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 3px rgba(0, 59, 113, 0.08);
+}

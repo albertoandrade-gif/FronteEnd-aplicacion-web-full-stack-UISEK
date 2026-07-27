@@ -83,9 +83,13 @@ Django procesa las operaciones CRUD y devuelve respuestas en formato JSON.
 ## Funcionalidades
 
 - Inicio de sesión mediante OAuth 2.0.
+- Registro de usuarios simples.
 - Almacenamiento local del token de acceso.
 - Envío automático del token Bearer mediante Axios.
 - Protección de rutas privadas.
+- Separación de vistas según el rol `is_staff`.
+- Catálogo de solo lectura para usuarios simples.
+- Reproducción integrada de tráileres de YouTube, Vimeo o video directo.
 - Cierre de sesión.
 - CRUD completo de películas.
 - CRUD completo de directores.
@@ -107,9 +111,11 @@ Django procesa las operaciones CRUD y devuelve respuestas en formato JSON.
 |---|---|---|
 | `/` | Página inicial | Pública |
 | `/login` | Inicio de sesión | Pública |
-| `/catalogo` | Gestión de películas | Privada |
-| `/directores` | Gestión de directores | Privada |
-| `/vendedores` | Gestión de vendedores | Privada |
+| `/registro` | Registro de usuarios | Pública |
+| `/catalogo-usuario` | Películas y tráileres, sin botones CRUD | Usuario autenticado |
+| `/catalogo` | Gestión de películas | Admin/Staff |
+| `/directores` | Gestión de directores | Admin/Staff |
+| `/vendedores` | Gestión de vendedores | Admin/Staff |
 
 ---
 
@@ -122,18 +128,23 @@ FrontEnd-aplicacion-web-full-stack-UISEK/
 │
 ├── src/
 │   ├── components/
+│   │   ├── AdminRoute.jsx
 │   │   ├── AppNavbar.jsx
 │   │   ├── ConfirmDeleteDialog.jsx
 │   │   ├── DirectorFormDialog.jsx
 │   │   ├── PeliculaFormDialog.jsx
 │   │   ├── ProtectedLayout.jsx
 │   │   ├── ProtectedRoute.jsx
+│   │   ├── RegisterForm.jsx
+│   │   ├── TrailerPlayer.jsx
 │   │   └── VendedorFormDialog.jsx
 │   │
 │   ├── pages/
 │   │   ├── CatalogoPage.jsx
+│   │   ├── CatalogoUsuarioPage.jsx
 │   │   ├── DirectoresPage.jsx
 │   │   ├── LoginPage.jsx
+│   │   ├── RegisterPage.jsx
 │   │   └── VendedoresPage.jsx
 │   │
 │   ├── services/
@@ -142,6 +153,8 @@ FrontEnd-aplicacion-web-full-stack-UISEK/
 │   │
 │   ├── utils/
 │   │   └── media.js
+│   ├── theme/
+│   │   └── Theme.js
 │   │
 │   ├── App.jsx
 │   ├── main.jsx
@@ -206,6 +219,7 @@ Contenido básico:
 ```env
 VITE_API_URL=http://127.0.0.1:8000
 VITE_CLIENT_ID=COLOCAR_CLIENT_ID
+VITE_REGISTER_ENDPOINT=/api/v1/catalog/usuarios/registro/
 ```
 
 El archivo `.env.local` no debe subirse a GitHub.
@@ -270,6 +284,47 @@ Authorization: Bearer ACCESS_TOKEN
 ```text
 POST /api/v1/o/token/
 ```
+
+## Contrato requerido en el backend
+
+Para que las nuevas funciones trabajen completamente, Django debe
+implementar:
+
+```text
+POST /api/v1/catalog/usuarios/registro/
+GET  /api/v1/catalog/usuarios/perfil/
+```
+
+El registro recibe:
+
+```json
+{
+  "username": "usuario",
+  "first_name": "Nombre",
+  "last_name": "Apellido",
+  "email": "correo@ejemplo.com",
+  "password": "contraseña",
+  "password_confirm": "contraseña"
+}
+```
+
+El perfil debe devolver al menos:
+
+```json
+{
+  "is_staff": false
+}
+```
+
+El modelo y serializer de películas deben incluir el campo:
+
+```text
+trailer_url
+```
+
+Los usuarios simples deben tener permiso `GET` para películas. Las
+operaciones `POST`, `PATCH` y `DELETE` deben quedar limitadas a
+Admin/Staff también en el backend.
 
 ---
 

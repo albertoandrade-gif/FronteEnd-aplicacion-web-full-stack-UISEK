@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -12,35 +12,47 @@ import {
   Typography,
 } from "@mui/material";
 
-import { iniciarSesion } from "../services/authService";
+import {
+  esAdministrador,
+  iniciarSesion,
+} from "../services/authService";
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
 
-const handleSubmit = async (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
     if (!usuario.trim() || !password.trim()) {
       setError("Ingresa el usuario y la contraseña.");
       return;
     }
+
     try {
       setCargando(true);
       setError("");
+
       await iniciarSesion(usuario, password);
-      navigate("/catalogo");
+
+      navigate(
+        esAdministrador() ? "/catalogo" : "/catalogo-usuario",
+        { replace: true }
+      );
     } catch (errorSolicitud) {
       console.error(errorSolicitud);
+
       if (errorSolicitud.response?.status === 400) {
         setError("Usuario o contraseña incorrectos.");
       } else {
         setError("No se pudo conectar con el backend.");
       }
-    } finally { // Fixed the spelling here
+    } finally {
       setCargando(false);
     }
   };
@@ -56,13 +68,18 @@ const handleSubmit = async (event) => {
       >
         <Paper elevation={4} sx={{ width: "100%", p: 4 }}>
           <Stack component="form" spacing={3} onSubmit={handleSubmit}>
-            {/* CORRECCIÓN: Se cambió textAlign por align */}
             <Typography variant="h4" align="center">
               Iniciar sesión
             </Typography>
-            
+
+            {location.state?.registroExitoso && (
+              <Alert severity="success">
+                {location.state.registroExitoso}
+              </Alert>
+            )}
+
             {error && <Alert severity="error">{error}</Alert>}
-            
+
             <TextField
               label="Usuario"
               value={usuario}
@@ -70,6 +87,7 @@ const handleSubmit = async (event) => {
               disabled={cargando}
               fullWidth
             />
+
             <TextField
               label="Contraseña"
               type="password"
@@ -78,6 +96,7 @@ const handleSubmit = async (event) => {
               disabled={cargando}
               fullWidth
             />
+
             <Button
               type="submit"
               variant="contained"
@@ -90,11 +109,20 @@ const handleSubmit = async (event) => {
                 "Ingresar"
               )}
             </Button>
+
+            <Button
+              variant="outlined"
+              onClick={() => navigate("/registro")}
+              disabled={cargando}
+            >
+              Crear una cuenta
+            </Button>
+
             <Button
               onClick={() => navigate("/")}
               disabled={cargando}
             >
-              Volver
+              Volver al inicio
             </Button>
           </Stack>
         </Paper>
